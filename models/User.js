@@ -12,6 +12,8 @@ class UserModel {
     userData.createdAt = new Date();
     return await this.collection.insertOne(userData);
   }
+
+  
 }
 
 module.exports = UserModel;

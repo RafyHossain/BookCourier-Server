@@ -12,6 +12,7 @@ async function connectDatabase() {
     db,
     collections: {
       users: db.collection("users"),
+       books: db.collection("books"),
     },
   };
 }
