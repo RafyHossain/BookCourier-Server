@@ -1,39 +1,19 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient } = require("mongodb");
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.emedy2q.mongodb.net/?appName=Cluster0`;
+const client = new MongoClient(process.env.MONGO_URI);
 
+async function connectDatabase() {
+  await client.connect();
+  console.log("✅ MongoDB Connected");
 
+  const db = client.db("bookCourierDB");
 
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
-
-async function connectDB() {
-    try {
-        await client.connect();
-        const db = client.db(process.env.DB_NAME);
-
-        console.log("✅ MongoDB Connected Successfully");
-
-        return {
-            db,
-            collections: {
-                users: db.collection('users'),
-                books: db.collection('books'),
-                orders: db.collection('orders'),
-                payments: db.collection('payments'),
-                reviews: db.collection('reviews'),
-                wishlists: db.collection('wishlists')
-            }
-        };
-    } catch (error) {
-        console.error("❌ Database Connection Failed:", error);
-        process.exit(1);
-    }
+  return {
+    db,
+    collections: {
+      users: db.collection("users"),
+    },
+  };
 }
 
-module.exports = { connectDB };
+module.exports = { connectDatabase };
