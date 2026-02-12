@@ -35,6 +35,13 @@ module.exports = (models) => {
   );
 
   router.patch(
+  "/update-profile",
+  verifyToken,
+  (req, res) => userController.updateProfile(req, res)
+);
+
+
+  router.patch(
     "/make-librarian/:email",
     verifyToken,
     verifyAdmin,

@@ -16,16 +16,6 @@ module.exports = (models) => {
   );
 
   router.get(
-    "/",
-    (req, res) => bookController.getAllBooks(req, res)
-  );
-
-  router.get(
-    "/:id",
-    (req, res) => bookController.getBookById(req, res)
-  );
-
-  router.get(
     "/admin",
     verifyToken,
     verifyAdmin,
@@ -44,6 +34,16 @@ module.exports = (models) => {
     verifyToken,
     verifyAdmin,
     (req, res) => bookController.updateBookStatusAdmin(req, res)
+  );
+
+  router.get(
+    "/",
+    (req, res) => bookController.getAllBooks(req, res)
+  );
+
+  router.get(
+    "/:id",
+    (req, res) => bookController.getBookById(req, res)
   );
 
   return router;

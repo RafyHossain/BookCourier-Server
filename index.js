@@ -6,6 +6,7 @@ const { connectDatabase } = require("./config/database");
 const { initializeModels } = require("./models");
 const bookRoutes = require("./routes/books");
 const userRoutes = require("./routes/users");
+const orderRoutes = require("./routes/orders");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -29,6 +30,8 @@ async function startServer() {
 
   app.use("/users", userRoutes(models));
   app.use("/books", bookRoutes(models));
+  app.use("/orders", orderRoutes(models));
+
 
   app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);

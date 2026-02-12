@@ -5,10 +5,15 @@ class BookModel {
     this.collection = collection;
   }
 
-  async create(bookData) {
-    bookData.createdAt = new Date();
-    return await this.collection.insertOne(bookData);
-  }
+ async create(bookData) {
+  const newBook = {
+    ...bookData,
+    createdAt: new Date(),
+  };
+
+  return await this.collection.insertOne(newBook);
+}
+
 
   async findAll(search = "", sort = "desc") {
     const query = {

@@ -30,6 +30,23 @@ class UserController {
     }
   }
 
+
+ async updateProfile(req, res) {
+  try {
+    const email = req.user.email;
+    const { name, photoURL } = req.body;
+
+    const result = await this.userModel.updateProfile(email, name, photoURL);
+
+    res.send({ message: "Profile updated" });
+
+  } catch (error) {
+    res.status(500).send({ message: "Profile update failed" });
+  }
+}
+
+
+
   async updateUserRole(req, res) {
     try {
       const { email } = req.params;

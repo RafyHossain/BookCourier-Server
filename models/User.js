@@ -32,6 +32,20 @@ class UserModel {
     );
   }
 
+ async updateProfile(email, name, photoURL) {
+  return await this.collection.updateOne(
+    { email },
+    {
+      $set: {
+        name,
+        photoURL,
+      },
+    }
+  );
+}
+
+
+
   async updateRoleById(id, role) {
     return await this.collection.updateOne(
       { _id: new ObjectId(id) },
