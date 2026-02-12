@@ -1,6 +1,9 @@
+const { ObjectId } = require("mongodb");
+
 class BookController {
   constructor(models) {
     this.Book = models.Book;
+    this.Order = models.Order;
   }
 
   async addBook(req, res) {
@@ -13,14 +16,67 @@ class BookController {
   }
 
   async getAllBooks(req, res) {
-    const { search = "", sort = "desc" } = req.query;
-    const books = await this.Book.findAll(search, sort);
-    res.send(books);
+    try {
+      const { search = "", sort = "desc" } = req.query;
+      const books = await this.Book.findAll(search, sort);
+      res.send(books);
+    } catch (error) {
+      res.status(500).send({ message: "Failed to fetch books" });
+    }
   }
 
   async getBookById(req, res) {
-    const book = await this.Book.findById(req.params.id);
-    res.send(book);
+    try {
+      const book = await this.Book.findById(req.params.id);
+      res.send(book);
+    } catch (error) {
+      res.status(500).send({ message: "Failed to fetch book" });
+    }
+  }
+
+  async getAllBooksAdmin(req, res) {
+    try {
+      const books = await this.Book.collection
+        .find()
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      res.send(books);
+    } catch (error) {
+      res.status(500).send({ message: "Failed to fetch books" });
+    }
+  }
+
+  async deleteBookAdmin(req, res) {
+    try {
+      const { id } = req.params;
+
+      await this.Order.collection.deleteMany({ bookId: id });
+
+      await this.Book.collection.deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      res.send({ message: "Book deleted successfully" });
+    } catch (error) {
+      res.status(500).send({ message: "Delete failed" });
+    }
+  }
+
+  async updateBookStatusAdmin(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      await this.Book.collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status } }
+      );
+
+      res.send({ message: "Book status updated" });
+    } catch (error) {
+      res.status(500).send({ message: "Update failed" });
+    }
   }
 }
 

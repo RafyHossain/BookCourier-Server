@@ -1,59 +1,39 @@
 const admin = require("../config/firebase");
 
-// Verify Firebase Token
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).send({ message: "Unauthorized access" });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "Unauthorized" });
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
-    const token = authHeader.split(" ")[1];
     const decoded = await admin.auth().verifyIdToken(token);
-
-    req.decodedEmail = decoded.email; // keep your naming style
+    req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).send({ message: "Invalid or expired token" });
+    return res.status(403).send({ message: "Forbidden" });
   }
 };
 
-//  Generic Role Verifier
-const verifyRole = (requiredRole) => {
-  return async (req, res, next) => {
-    try {
-      if (!req.collections) {
-        return res
-          .status(500)
-          .send({ message: "Database collections not attached" });
-      }
+const verifyAdmin = async (req, res, next) => {
+  try {
+    const email = req.user.email;
 
-      const { users } = req.collections;
-      const email = req.decodedEmail;
+    const userCollection = req.app.locals.collections.users;
 
-      const user = await users.findOne({ email });
+    const user = await userCollection.findOne({ email });
 
-      if (!user || user.role !== requiredRole) {
-        return res.status(403).send({ message: "Forbidden access" });
-      }
-
-      next();
-    } catch (error) {
-      return res.status(500).send({
-        message: "Role verification failed",
-        error: error.message,
-      });
+    if (!user || user.role !== "admin") {
+      return res.status(403).send({ message: "Forbidden" });
     }
-  };
+
+    next();
+  } catch (error) {
+    return res.status(500).send({ message: "Server Error" });
+  }
 };
 
-//  Specific Role Middlewares
-const verifyAdmin = verifyRole("admin");
-const verifyLibrarian = verifyRole("librarian");
-
-module.exports = {
-  verifyToken,
-  verifyAdmin,
-  verifyLibrarian,
-};
+module.exports = { verifyToken, verifyAdmin };

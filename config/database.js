@@ -12,7 +12,9 @@ async function connectDatabase() {
     db,
     collections: {
       users: db.collection("users"),
-       books: db.collection("books"),
+      books: db.collection("books"),
+      librarianRequests: db.collection("librarianRequests"),
+      orders: db.collection("orders"),
     },
   };
 }

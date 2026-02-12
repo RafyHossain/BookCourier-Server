@@ -1,52 +1,51 @@
-const { verifyToken, verifyAdmin } = require("../middleware/auth");
+const express = require("express");
+const router = express.Router();
 
-function userRoutes(app, controllers) {
-  const userController = controllers.user;
+const UserController = require("../controllers/userController");
 
-  // Save user
-  app.post("/users", (req, res) =>
+const { verifyToken } = require("../middleware/auth");
+const { verifyAdmin } = require("../middleware/verifyRole");
+
+module.exports = (models) => {
+  const userController = new UserController(models.User);
+
+  router.post("/", (req, res) =>
     userController.saveUser(req, res)
   );
 
-  // Get all users (admin only)
-  app.get(
-    "/users",
+  router.get(
+    "/",
     verifyToken,
     verifyAdmin,
     (req, res) => userController.getAllUsers(req, res)
   );
 
-  // Update role (admin only)
-  app.patch(
-    "/users/:email/role",
+  router.patch(
+    "/:email/role",
     verifyToken,
     verifyAdmin,
     (req, res) => userController.updateUserRole(req, res)
   );
 
-  // 🔥 ADD THIS ROUTE (VERY IMPORTANT)
-  app.get(
-    "/users/role/:email",
+  router.patch(
+    "/make-admin/:email",
     verifyToken,
-    async (req, res) => {
-      try {
-        const { users } = req.collections;
-        const email = req.params.email;
-
-        const user = await users.findOne({ email });
-
-        res.send({
-          role: user?.role || "user",
-        });
-
-      } catch (error) {
-        res.status(500).send({
-          message: "Error fetching role",
-          error: error.message,
-        });
-      }
-    }
+    verifyAdmin,
+    (req, res) => userController.makeAdmin(req, res)
   );
-}
 
-module.exports = userRoutes;
+  router.patch(
+    "/make-librarian/:email",
+    verifyToken,
+    verifyAdmin,
+    (req, res) => userController.makeLibrarian(req, res)
+  );
+
+  router.get(
+    "/:email/role",
+    verifyToken,
+    (req, res) => userController.getUserRole(req, res)
+  );
+
+  return router;
+};
