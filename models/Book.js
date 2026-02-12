@@ -16,16 +16,18 @@ class BookModel {
       title: { $regex: search, $options: "i" },
     };
 
-    const sortOption = sort === "asc" ? 1 : -1;
+    const sortValue = sort === "asc" ? 1 : -1;
 
     return await this.collection
       .find(query)
-      .sort({ price: sortOption })
+      .sort({ price: sortValue })
       .toArray();
   }
 
   async findById(id) {
-    return await this.collection.findOne({ _id: new ObjectId(id) });
+    return await this.collection.findOne({
+      _id: new ObjectId(id),
+    });
   }
 }
 
