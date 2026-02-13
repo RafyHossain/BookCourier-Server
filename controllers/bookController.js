@@ -63,6 +63,47 @@ class BookController {
     }
   }
 
+
+
+
+  async getMyBooks(req, res) {
+  try {
+    const email = req.user.email;
+
+    const books = await this.Book.collection
+      .find({ createdBy: email })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send(books);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch books" });
+  }
+}
+
+async updateBook(req, res) {
+  try {
+    const { id } = req.params;
+    const email = req.user.email;
+
+    const updatedData = req.body;
+
+    await this.Book.collection.updateOne(
+      { _id: new ObjectId(id), createdBy: email },
+      { $set: updatedData }
+    );
+
+    res.send({ message: "Book updated successfully" });
+  } catch (error) {
+    res.status(500).send({ message: "Update failed" });
+  }
+}
+
+
+
+
+
+
   async updateBookStatusAdmin(req, res) {
     try {
       const { id } = req.params;

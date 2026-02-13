@@ -46,5 +46,19 @@ module.exports = (models) => {
     (req, res) => bookController.getBookById(req, res)
   );
 
+
+  router.get(
+  "/my-books",
+  verifyToken,
+  (req, res) => bookController.getMyBooks(req, res)
+);
+
+router.patch(
+  "/my-books/:id",
+  verifyToken,
+  (req, res) => bookController.updateBook(req, res)
+);
+
+
   return router;
 };

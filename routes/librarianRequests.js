@@ -1,27 +1,42 @@
-const { verifyToken, verifyAdmin } = require("../middleware/auth");
+const express = require("express");
+const router = express.Router();
 
-function librarianRequestRoutes(app, controllers) {
-  const controller = controllers.librarianRequest;
+const { verifyToken } = require("../middleware/auth");
+const { verifyAdmin } = require("../middleware/verifyRole");
 
-  app.post(
-    "/librarian-request",
+const LibrarianRequestController = require("../controllers/librarianRequestController");
+
+module.exports = (models) => {
+
+  const controller = new LibrarianRequestController(models);
+
+  router.post(
+    "/",
     verifyToken,
     (req, res) => controller.sendRequest(req, res)
   );
 
-  app.get(
-    "/admin/librarian-requests",
+  router.get(
+    "/",
     verifyToken,
     verifyAdmin,
     (req, res) => controller.getAllRequests(req, res)
   );
 
-  app.patch(
-    "/admin/librarian-requests/:id/approve",
+  router.patch(
+    "/:id/approve",
     verifyToken,
     verifyAdmin,
     (req, res) => controller.approveRequest(req, res)
   );
-}
 
-module.exports = librarianRequestRoutes;
+  router.delete(
+  "/:id",
+  verifyToken,
+  verifyAdmin,
+  (req, res) => controller.deleteRequest(req, res)
+);
+
+
+  return router;
+};

@@ -4,34 +4,46 @@ class OrderController {
     this.Book = models.Book;
   }
 
-  // 🔹 Create Order
-  async createOrder(req, res) {
-    try {
-      const { bookId } = req.body;
-      const userEmail = req.user.email;
+  //  Create Order
+async createOrder(req, res) {
+  try {
+    const { bookId, phone, address, name } = req.body;
+    const userEmail = req.user.email;
 
-      const book = await this.Book.findById(bookId);
+    const book = await this.Book.findById(bookId);
 
-      if (!book) {
-        return res.status(404).send({ message: "Book not found" });
-      }
-
-      const orderData = {
-        bookId,
-        bookTitle: book.title,
-        price: book.price,
-        userEmail,
-      };
-
-      const result = await this.Order.create(orderData);
-      res.status(201).send(result);
-
-    } catch (error) {
-      res.status(500).send({ message: "Order failed" });
+    if (!book) {
+      return res.status(404).send({ message: "Book not found" });
     }
-  }
 
-  // 🔹 Get My Orders
+    const existingOrder = await this.Order.findActiveOrder(bookId, userEmail);
+
+    if (existingOrder) {
+      return res.status(400).send({
+        message: "You already ordered this book",
+      });
+    }
+
+    const orderData = {
+      bookId,
+      bookTitle: book.title,
+      price: book.price,
+      userEmail,
+      name,
+      phone,
+      address,
+    };
+
+    const result = await this.Order.create(orderData);
+
+    res.status(201).send(result);
+
+  } catch (error) {
+    res.status(500).send({ message: "Order failed" });
+  }
+}
+
+  //  Get My Orders
   async getMyOrders(req, res) {
     try {
       const userEmail = req.user.email;
@@ -42,7 +54,7 @@ class OrderController {
     }
   }
 
-  // 🔹 Cancel Order
+  //  Cancel Order
   async cancelOrder(req, res) {
     try {
       const { id } = req.params;
@@ -56,13 +68,16 @@ class OrderController {
     }
   }
 
-  // 🔹 Pay Order  ✅ NEW METHOD
+
+  
+
+  //  Pay Order  
   async payOrder(req, res) {
     try {
       const { id } = req.params;
       const userEmail = req.user.email;
 
-      // Optional safety check (recommended)
+      // Optional safety check 
       const order = await this.Order.collection.findOne({
         _id: new (require("mongodb").ObjectId)(id),
         userEmail,

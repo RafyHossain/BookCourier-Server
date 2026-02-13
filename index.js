@@ -7,6 +7,9 @@ const { initializeModels } = require("./models");
 const bookRoutes = require("./routes/books");
 const userRoutes = require("./routes/users");
 const orderRoutes = require("./routes/orders");
+const librarianRequestRoutes = require("./routes/librarianRequests");
+
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -31,6 +34,8 @@ async function startServer() {
   app.use("/users", userRoutes(models));
   app.use("/books", bookRoutes(models));
   app.use("/orders", orderRoutes(models));
+  app.use("/librarian-requests", librarianRequestRoutes(models));
+
 
 
   app.listen(port, () => {

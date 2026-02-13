@@ -1,3 +1,5 @@
+const { ObjectId } = require("mongodb");
+
 class LibrarianRequestController {
   constructor(models) {
     this.Request = models.LibrarianRequest;
@@ -6,17 +8,17 @@ class LibrarianRequestController {
 
   async sendRequest(req, res) {
     try {
-      const email = req.decodedEmail;
+      const email = req.user.email;
 
       const existing = await this.Request.findByEmail(email);
 
       if (existing) {
-        return res.send({ message: "Request already exists" });
+        return res.status(400).send({
+          message: "Request already exists",
+        });
       }
 
-      const result = await this.Request.create({
-        email,
-      });
+      const result = await this.Request.create({ email });
 
       res.status(201).send(result);
     } catch (error) {
@@ -38,17 +40,38 @@ class LibrarianRequestController {
       const id = req.params.id;
 
       const request = await this.Request.collection.findOne({
-        _id: new (require("mongodb").ObjectId)(id),
+        _id: new ObjectId(id),
       });
 
+      if (!request) {
+        return res.status(404).send({ message: "Request not found" });
+      }
+
       await this.User.updateRole(request.email, "librarian");
+
       await this.Request.updateStatus(id, "approved");
 
-      res.send({ message: "Approved" });
+      res.send({ message: "Approved successfully" });
     } catch (error) {
       res.status(500).send({ message: error.message });
     }
   }
+
+  async deleteRequest(req, res) {
+  try {
+    const id = req.params.id;
+
+    await this.Request.collection.deleteOne({
+      _id: new ObjectId(id),
+    });
+
+    res.send({ message: "Request deleted" });
+
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+}
+
 }
 
 module.exports = LibrarianRequestController;
