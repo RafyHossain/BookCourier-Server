@@ -37,7 +37,7 @@ module.exports = (models) => {
     (req, res) => orderController.payOrder(req, res)
   );
 
-  // 🔥 LIBRARIAN ROUTES
+  //  LIBRARIAN ROUTES
   router.get(
     "/librarian-orders",
     verifyToken,
@@ -49,6 +49,13 @@ module.exports = (models) => {
     verifyToken,
     (req, res) => orderController.updateOrderStatus(req, res)
   );
+
+  router.delete(
+  "/librarian-orders/:id",
+  verifyToken,
+  (req, res) => orderController.deleteOrder(req, res)
+);
+
 
   return router;
 };

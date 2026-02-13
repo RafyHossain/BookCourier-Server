@@ -12,7 +12,9 @@ class OrderController {
       const { bookId, phone, address, name } = req.body;
       const userEmail = req.user.email;
 
-      const book = await this.Book.findById(bookId);
+      const book = await this.Book.collection.findOne({
+        _id: new ObjectId(bookId),
+      });
 
       if (!book) {
         return res.status(404).send({ message: "Book not found" });
@@ -38,7 +40,7 @@ class OrderController {
         name,
         phone,
         address,
-        bookOwner: book.ownerEmail, // 🔥 IMPORTANT
+        bookOwner: book.librarianEmail, // ✅ FIXED
       };
 
       const result = await this.Order.create(orderData);
@@ -64,11 +66,8 @@ class OrderController {
   async cancelOrder(req, res) {
     try {
       const { id } = req.params;
-
       await this.Order.cancelOrder(id);
-
       res.send({ message: "Order cancelled" });
-
     } catch (error) {
       res.status(500).send({ message: "Cancel failed" });
     }
@@ -152,6 +151,35 @@ class OrderController {
 
     } catch (error) {
       res.status(500).send({ message: "Status update failed" });
+    }
+  }
+
+  async deleteOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const email = req.user.email;
+
+      const order = await this.Order.collection.findOne({
+        _id: new ObjectId(id),
+        bookOwner: email
+      });
+
+      if (!order) {
+        return res.status(403).send({
+          message: "Unauthorized action"
+        });
+      }
+
+      await this.Order.collection.deleteOne({
+        _id: new ObjectId(id)
+      });
+
+      res.send({ message: "Order deleted successfully" });
+
+    } catch (error) {
+      res.status(500).send({
+        message: "Delete failed"
+      });
     }
   }
 }

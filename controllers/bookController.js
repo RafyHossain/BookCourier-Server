@@ -8,22 +8,21 @@ class BookController {
 
   // ================= ADD BOOK =================
   async addBook(req, res) {
-  try {
-    const bookData = {
-      ...req.body,
-      librarianEmail: req.user.email,
-      createdAt: new Date(),
-    };
+    try {
+      const bookData = {
+        ...req.body,
+        librarianEmail: req.user.email,
+        createdAt: new Date(),
+      };
 
-    const result = await this.Book.create(bookData);
+      const result = await this.Book.create(bookData);
+      res.status(201).send(result);
 
-    res.status(201).send(result);
-
-  } catch (error) {
-    res.status(500).send({ message: error.message });
+    } catch (error) {
+      console.log("Add Book Error:", error);
+      res.status(500).send({ message: error.message });
+    }
   }
-}
-
 
   // ================= PUBLIC BOOKS =================
   async getAllBooks(req, res) {
@@ -36,6 +35,7 @@ class BookController {
       res.send(books);
 
     } catch (error) {
+      console.log("Get Books Error:", error);
       res.status(500).send({ message: "Failed to fetch books" });
     }
   }
@@ -47,35 +47,35 @@ class BookController {
         _id: new ObjectId(req.params.id),
       });
 
+      if (!book) {
+        return res.status(404).send({ message: "Book not found" });
+      }
+
       res.send(book);
 
     } catch (error) {
+      console.log("Get Book Error:", error);
       res.status(500).send({ message: "Failed to fetch book" });
     }
   }
 
   // ================= LIBRARIAN MY BOOKS =================
- async getMyBooks(req, res) {
-  try {
-    const email = req.user.email;
+  async getMyBooks(req, res) {
+    try {
+      const email = req.user.email;
 
-    const books = await this.Book.collection
-      .find({
-        $or: [
-          { ownerEmail: email },
-          { librarianEmail: email }
-        ]
-      })
-      .sort({ createdAt: -1 })
-      .toArray();
+      const books = await this.Book.collection
+        .find({ librarianEmail: email })
+        .sort({ createdAt: -1 })
+        .toArray();
 
-    res.send(books);
+      res.send(books);
 
-  } catch (error) {
-    res.status(500).send({ message: "Failed to fetch books" });
+    } catch (error) {
+      console.log("My Books Error:", error);
+      res.status(500).send({ message: "Failed to fetch books" });
+    }
   }
-}
-
 
   // ================= UPDATE BOOK =================
   async updateBook(req, res) {
@@ -83,14 +83,19 @@ class BookController {
       const { id } = req.params;
       const email = req.user.email;
 
-      await this.Book.collection.updateOne(
+      const result = await this.Book.collection.updateOne(
         { _id: new ObjectId(id), librarianEmail: email },
         { $set: req.body }
       );
 
+      if (result.modifiedCount === 0) {
+        return res.status(404).send({ message: "Book not found or unauthorized" });
+      }
+
       res.send({ message: "Book updated successfully" });
 
     } catch (error) {
+      console.log("Update Book Error:", error);
       res.status(500).send({ message: "Update failed" });
     }
   }
@@ -100,15 +105,24 @@ class BookController {
     try {
       const { id } = req.params;
 
+      // delete related orders
       await this.Order.collection.deleteMany({ bookId: id });
 
-      await this.Book.collection.deleteOne({
+      // delete book
+      const result = await this.Book.collection.deleteOne({
         _id: new ObjectId(id),
       });
 
-      res.send({ message: "Book deleted successfully" });
+      if (result.deletedCount === 0) {
+        return res.status(404).send({ message: "Book not found" });
+      }
+
+      res.send({
+        message: "Book and related orders deleted"
+      });
 
     } catch (error) {
+      console.log("Delete Book Error:", error);
       res.status(500).send({ message: "Delete failed" });
     }
   }
@@ -119,15 +133,36 @@ class BookController {
       const { id } = req.params;
       const { status } = req.body;
 
-      await this.Book.collection.updateOne(
+      const result = await this.Book.collection.updateOne(
         { _id: new ObjectId(id) },
         { $set: { status } }
       );
 
-      res.send({ message: "Book status updated" });
+      if (result.modifiedCount === 0) {
+        return res.status(404).send({ message: "Book not found" });
+      }
+
+      res.send({ message: "Book status updated successfully" });
 
     } catch (error) {
+      console.log("Update Status Error:", error);
       res.status(500).send({ message: "Update failed" });
+    }
+  }
+
+  // ================= ADMIN GET ALL =================
+  async getAllBooksAdmin(req, res) {
+    try {
+      const books = await this.Book.collection
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      res.send(books);
+
+    } catch (error) {
+      console.log("Admin Get Books Error:", error);
+      res.status(500).send({ message: "Failed to fetch books" });
     }
   }
 }

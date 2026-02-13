@@ -11,13 +11,14 @@ module.exports = (models) => {
 
   // ================= LIBRARIAN =================
 
- 
+  // Get My Books
   router.get(
     "/my-books",
     verifyToken,
     (req, res) => bookController.getMyBooks(req, res)
   );
 
+  // Update My Book
   router.patch(
     "/my-books/:id",
     verifyToken,
@@ -26,6 +27,7 @@ module.exports = (models) => {
 
   // ================= ADMIN =================
 
+  // Get All Books
   router.get(
     "/admin",
     verifyToken,
@@ -33,13 +35,7 @@ module.exports = (models) => {
     (req, res) => bookController.getAllBooksAdmin(req, res)
   );
 
-  router.delete(
-    "/admin/:id",
-    verifyToken,
-    verifyAdmin,
-    (req, res) => bookController.deleteBookAdmin(req, res)
-  );
-
+  // Update Publish / Unpublish
   router.patch(
     "/admin/:id",
     verifyToken,
@@ -47,21 +43,30 @@ module.exports = (models) => {
     (req, res) => bookController.updateBookStatusAdmin(req, res)
   );
 
+  // Delete Book (and related orders)
+  router.delete(
+    "/admin/:id",
+    verifyToken,
+    verifyAdmin,
+    (req, res) => bookController.deleteBookAdmin(req, res)
+  );
+
   // ================= PUBLIC =================
 
-  // ADD BOOK
+  // Add Book (Librarian)
   router.post(
     "/",
     verifyToken,
     (req, res) => bookController.addBook(req, res)
   );
 
-  // ALL BOOKS
+  // All Published Books
   router.get(
     "/",
     (req, res) => bookController.getAllBooks(req, res)
   );
 
+  // Single Book
   router.get(
     "/:id",
     (req, res) => bookController.getBookById(req, res)

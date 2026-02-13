@@ -38,6 +38,14 @@ class OrderModel {
     );
   }
 
+  // Delete Order (Librarian)
+async deleteOrder(id) {
+  return await this.collection.deleteOne({
+    _id: new ObjectId(id)
+  });
+}
+
+
   // Mark Order As Paid
   async markAsPaid(id, paymentId) {
     return await this.collection.updateOne(
