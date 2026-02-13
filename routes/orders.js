@@ -37,5 +37,18 @@ module.exports = (models) => {
     (req, res) => orderController.payOrder(req, res)
   );
 
+  // 🔥 LIBRARIAN ROUTES
+  router.get(
+    "/librarian-orders",
+    verifyToken,
+    (req, res) => orderController.getLibrarianOrders(req, res)
+  );
+
+  router.patch(
+    "/librarian-orders/:id",
+    verifyToken,
+    (req, res) => orderController.updateOrderStatus(req, res)
+  );
+
   return router;
 };

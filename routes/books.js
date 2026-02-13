@@ -9,11 +9,22 @@ const BookController = require("../controllers/bookController");
 module.exports = (models) => {
   const bookController = new BookController(models);
 
-  router.post(
-    "/",
+  // ================= LIBRARIAN =================
+
+ 
+  router.get(
+    "/my-books",
     verifyToken,
-    (req, res) => bookController.addBook(req, res)
+    (req, res) => bookController.getMyBooks(req, res)
   );
+
+  router.patch(
+    "/my-books/:id",
+    verifyToken,
+    (req, res) => bookController.updateBook(req, res)
+  );
+
+  // ================= ADMIN =================
 
   router.get(
     "/admin",
@@ -36,6 +47,16 @@ module.exports = (models) => {
     (req, res) => bookController.updateBookStatusAdmin(req, res)
   );
 
+  // ================= PUBLIC =================
+
+  // ADD BOOK
+  router.post(
+    "/",
+    verifyToken,
+    (req, res) => bookController.addBook(req, res)
+  );
+
+  // ALL BOOKS
   router.get(
     "/",
     (req, res) => bookController.getAllBooks(req, res)
@@ -45,20 +66,6 @@ module.exports = (models) => {
     "/:id",
     (req, res) => bookController.getBookById(req, res)
   );
-
-
-  router.get(
-  "/my-books",
-  verifyToken,
-  (req, res) => bookController.getMyBooks(req, res)
-);
-
-router.patch(
-  "/my-books/:id",
-  verifyToken,
-  (req, res) => bookController.updateBook(req, res)
-);
-
 
   return router;
 };

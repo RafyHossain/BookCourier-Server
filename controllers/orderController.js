@@ -1,49 +1,56 @@
+const { ObjectId } = require("mongodb");
+
 class OrderController {
   constructor(models) {
     this.Order = models.Order;
     this.Book = models.Book;
   }
 
-  //  Create Order
-async createOrder(req, res) {
-  try {
-    const { bookId, phone, address, name } = req.body;
-    const userEmail = req.user.email;
+  // ================= CREATE ORDER =================
+  async createOrder(req, res) {
+    try {
+      const { bookId, phone, address, name } = req.body;
+      const userEmail = req.user.email;
 
-    const book = await this.Book.findById(bookId);
+      const book = await this.Book.findById(bookId);
 
-    if (!book) {
-      return res.status(404).send({ message: "Book not found" });
-    }
+      if (!book) {
+        return res.status(404).send({ message: "Book not found" });
+      }
 
-    const existingOrder = await this.Order.findActiveOrder(bookId, userEmail);
-
-    if (existingOrder) {
-      return res.status(400).send({
-        message: "You already ordered this book",
+      const existingOrder = await this.Order.collection.findOne({
+        bookId,
+        userEmail,
+        status: { $ne: "cancelled" }
       });
+
+      if (existingOrder) {
+        return res.status(400).send({
+          message: "You already ordered this book",
+        });
+      }
+
+      const orderData = {
+        bookId,
+        bookTitle: book.title,
+        price: book.price,
+        userEmail,
+        name,
+        phone,
+        address,
+        bookOwner: book.ownerEmail, // 🔥 IMPORTANT
+      };
+
+      const result = await this.Order.create(orderData);
+
+      res.status(201).send(result);
+
+    } catch (error) {
+      res.status(500).send({ message: "Order failed" });
     }
-
-    const orderData = {
-      bookId,
-      bookTitle: book.title,
-      price: book.price,
-      userEmail,
-      name,
-      phone,
-      address,
-    };
-
-    const result = await this.Order.create(orderData);
-
-    res.status(201).send(result);
-
-  } catch (error) {
-    res.status(500).send({ message: "Order failed" });
   }
-}
 
-  //  Get My Orders
+  // ================= USER ORDERS =================
   async getMyOrders(req, res) {
     try {
       const userEmail = req.user.email;
@@ -54,7 +61,6 @@ async createOrder(req, res) {
     }
   }
 
-  //  Cancel Order
   async cancelOrder(req, res) {
     try {
       const { id } = req.params;
@@ -68,18 +74,13 @@ async createOrder(req, res) {
     }
   }
 
-
-  
-
-  //  Pay Order  
   async payOrder(req, res) {
     try {
       const { id } = req.params;
       const userEmail = req.user.email;
 
-      // Optional safety check 
       const order = await this.Order.collection.findOne({
-        _id: new (require("mongodb").ObjectId)(id),
+        _id: new ObjectId(id),
         userEmail,
         paymentStatus: "unpaid"
       });
@@ -102,25 +103,57 @@ async createOrder(req, res) {
     }
   }
 
- async checkUserOrder(req, res) {
-  try {
-    const { bookId } = req.params;
-    const userEmail = req.user.email;
+  async checkUserOrder(req, res) {
+    try {
+      const { bookId } = req.params;
+      const userEmail = req.user.email;
 
-    const order = await this.Order.collection.findOne({
-      bookId: bookId,
-      userEmail: userEmail,
-      status: { $ne: "cancelled" }
-    });
+      const order = await this.Order.collection.findOne({
+        bookId,
+        userEmail,
+        status: { $ne: "cancelled" }
+      });
 
-    res.send(order ? true : false);
+      res.send(order ? true : false);
 
-  } catch (error) {
-    res.status(500).send({ message: "Failed to check order" });
+    } catch (error) {
+      res.status(500).send({ message: "Failed to check order" });
+    }
   }
-}
 
+  // ================= LIBRARIAN ORDERS =================
+  async getLibrarianOrders(req, res) {
+    try {
+      const email = req.user.email;
 
+      const orders = await this.Order.collection
+        .find({ bookOwner: email })
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      res.send(orders);
+
+    } catch (error) {
+      res.status(500).send({ message: "Failed to fetch librarian orders" });
+    }
+  }
+
+  async updateOrderStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      await this.Order.collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status } }
+      );
+
+      res.send({ message: "Order status updated" });
+
+    } catch (error) {
+      res.status(500).send({ message: "Status update failed" });
+    }
+  }
 }
 
 module.exports = OrderController;

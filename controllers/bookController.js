@@ -6,47 +6,96 @@ class BookController {
     this.Order = models.Order;
   }
 
+  // ================= ADD BOOK =================
   async addBook(req, res) {
-    try {
-      const result = await this.Book.create(req.body);
-      res.status(201).send(result);
-    } catch (error) {
-      res.status(500).send({ message: error.message });
-    }
-  }
+  try {
+    const bookData = {
+      ...req.body,
+      librarianEmail: req.user.email,
+      createdAt: new Date(),
+    };
 
+    const result = await this.Book.create(bookData);
+
+    res.status(201).send(result);
+
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+}
+
+
+  // ================= PUBLIC BOOKS =================
   async getAllBooks(req, res) {
     try {
-      const { search = "", sort = "desc" } = req.query;
-      const books = await this.Book.findAll(search, sort);
+      const books = await this.Book.collection
+        .find({ status: "published" })
+        .sort({ createdAt: -1 })
+        .toArray();
+
       res.send(books);
+
     } catch (error) {
       res.status(500).send({ message: "Failed to fetch books" });
     }
   }
 
+  // ================= SINGLE BOOK =================
   async getBookById(req, res) {
     try {
-      const book = await this.Book.findById(req.params.id);
+      const book = await this.Book.collection.findOne({
+        _id: new ObjectId(req.params.id),
+      });
+
       res.send(book);
+
     } catch (error) {
       res.status(500).send({ message: "Failed to fetch book" });
     }
   }
 
-  async getAllBooksAdmin(req, res) {
-    try {
-      const books = await this.Book.collection
-        .find()
-        .sort({ createdAt: -1 })
-        .toArray();
+  // ================= LIBRARIAN MY BOOKS =================
+ async getMyBooks(req, res) {
+  try {
+    const email = req.user.email;
 
-      res.send(books);
+    const books = await this.Book.collection
+      .find({
+        $or: [
+          { ownerEmail: email },
+          { librarianEmail: email }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send(books);
+
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch books" });
+  }
+}
+
+
+  // ================= UPDATE BOOK =================
+  async updateBook(req, res) {
+    try {
+      const { id } = req.params;
+      const email = req.user.email;
+
+      await this.Book.collection.updateOne(
+        { _id: new ObjectId(id), librarianEmail: email },
+        { $set: req.body }
+      );
+
+      res.send({ message: "Book updated successfully" });
+
     } catch (error) {
-      res.status(500).send({ message: "Failed to fetch books" });
+      res.status(500).send({ message: "Update failed" });
     }
   }
 
+  // ================= ADMIN DELETE =================
   async deleteBookAdmin(req, res) {
     try {
       const { id } = req.params;
@@ -58,52 +107,13 @@ class BookController {
       });
 
       res.send({ message: "Book deleted successfully" });
+
     } catch (error) {
       res.status(500).send({ message: "Delete failed" });
     }
   }
 
-
-
-
-  async getMyBooks(req, res) {
-  try {
-    const email = req.user.email;
-
-    const books = await this.Book.collection
-      .find({ createdBy: email })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    res.send(books);
-  } catch (error) {
-    res.status(500).send({ message: "Failed to fetch books" });
-  }
-}
-
-async updateBook(req, res) {
-  try {
-    const { id } = req.params;
-    const email = req.user.email;
-
-    const updatedData = req.body;
-
-    await this.Book.collection.updateOne(
-      { _id: new ObjectId(id), createdBy: email },
-      { $set: updatedData }
-    );
-
-    res.send({ message: "Book updated successfully" });
-  } catch (error) {
-    res.status(500).send({ message: "Update failed" });
-  }
-}
-
-
-
-
-
-
+  // ================= ADMIN STATUS UPDATE =================
   async updateBookStatusAdmin(req, res) {
     try {
       const { id } = req.params;
@@ -115,6 +125,7 @@ async updateBook(req, res) {
       );
 
       res.send({ message: "Book status updated" });
+
     } catch (error) {
       res.status(500).send({ message: "Update failed" });
     }
