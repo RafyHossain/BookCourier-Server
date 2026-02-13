@@ -6,12 +6,13 @@ class BookController {
     this.Order = models.Order;
   }
 
-  // ================= ADD BOOK =================
+  //  ADD BOOK
   async addBook(req, res) {
     try {
       const bookData = {
         ...req.body,
         librarianEmail: req.user.email,
+        status: "unpublished", 
         createdAt: new Date(),
       };
 
@@ -24,7 +25,7 @@ class BookController {
     }
   }
 
-  // ================= PUBLIC BOOKS =================
+  //  ALL PUBLISHED BOOKS 
   async getAllBooks(req, res) {
     try {
       const books = await this.Book.collection
@@ -40,7 +41,26 @@ class BookController {
     }
   }
 
-  // ================= SINGLE BOOK =================
+  
+  async getLatestBooks(req, res) {
+    try {
+      const books = await this.Book.collection
+        .find({ status: "published" })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .toArray();
+
+      res.send(books);
+
+    } catch (error) {
+      console.log("Latest Books Error:", error);
+      res.status(500).send({
+        message: "Failed to fetch latest books"
+      });
+    }
+  }
+
+  // SINGLE BOOK
   async getBookById(req, res) {
     try {
       const book = await this.Book.collection.findOne({
@@ -59,7 +79,7 @@ class BookController {
     }
   }
 
-  // ================= LIBRARIAN MY BOOKS =================
+  // LIBRARIAN MY BOOKS 
   async getMyBooks(req, res) {
     try {
       const email = req.user.email;
@@ -89,7 +109,9 @@ class BookController {
       );
 
       if (result.modifiedCount === 0) {
-        return res.status(404).send({ message: "Book not found or unauthorized" });
+        return res.status(404).send({
+          message: "Book not found or unauthorized"
+        });
       }
 
       res.send({ message: "Book updated successfully" });
@@ -105,10 +127,10 @@ class BookController {
     try {
       const { id } = req.params;
 
-      // delete related orders
+      
       await this.Order.collection.deleteMany({ bookId: id });
 
-      // delete book
+      // Delete book
       const result = await this.Book.collection.deleteOne({
         _id: new ObjectId(id),
       });
@@ -118,7 +140,7 @@ class BookController {
       }
 
       res.send({
-        message: "Book and related orders deleted"
+        message: "Book and related orders deleted successfully"
       });
 
     } catch (error) {
@@ -127,11 +149,17 @@ class BookController {
     }
   }
 
-  // ================= ADMIN STATUS UPDATE =================
+  // ADMIN STATUS UPDATE 
   async updateBookStatusAdmin(req, res) {
     try {
       const { id } = req.params;
       const { status } = req.body;
+
+      if (!["published", "unpublished"].includes(status)) {
+        return res.status(400).send({
+          message: "Invalid status"
+        });
+      }
 
       const result = await this.Book.collection.updateOne(
         { _id: new ObjectId(id) },

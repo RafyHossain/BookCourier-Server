@@ -35,7 +35,7 @@ module.exports = (models) => {
     (req, res) => bookController.getAllBooksAdmin(req, res)
   );
 
-  // Update Publish / Unpublish
+  // Publish / Unpublish
   router.patch(
     "/admin/:id",
     verifyToken,
@@ -43,7 +43,7 @@ module.exports = (models) => {
     (req, res) => bookController.updateBookStatusAdmin(req, res)
   );
 
-  // Delete Book (and related orders)
+  // Delete Book + Related Orders
   router.delete(
     "/admin/:id",
     verifyToken,
@@ -53,7 +53,13 @@ module.exports = (models) => {
 
   // ================= PUBLIC =================
 
-  // Add Book (Librarian)
+  
+  router.get(
+    "/latest",
+    (req, res) => bookController.getLatestBooks(req, res)
+  );
+
+  // Add Book
   router.post(
     "/",
     verifyToken,
