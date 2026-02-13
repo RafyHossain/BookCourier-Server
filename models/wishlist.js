@@ -5,27 +5,34 @@ class WishlistModel {
     this.collection = collection;
   }
 
-  async add(data) {
+  async add(bookId, userEmail) {
+    const existing = await this.collection.findOne({
+      bookId,
+      userEmail
+    });
+
+    if (existing) {
+      throw new Error("Already in wishlist");
+    }
+
     return await this.collection.insertOne({
-      ...data,
-      createdAt: new Date(),
+      bookId,
+      userEmail,
+      createdAt: new Date()
     });
   }
 
-  async findByUser(email) {
+  async getUserWishlist(userEmail) {
     return await this.collection
-      .find({ userEmail: email })
+      .find({ userEmail })
       .sort({ createdAt: -1 })
       .toArray();
   }
 
-  async exists(bookId, userEmail) {
-    return await this.collection.findOne({ bookId, userEmail });
-  }
-
-  async remove(id) {
+  async remove(bookId, userEmail) {
     return await this.collection.deleteOne({
-      _id: new ObjectId(id),
+      bookId,
+      userEmail
     });
   }
 }

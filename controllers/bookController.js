@@ -6,42 +6,53 @@ class BookController {
     this.Order = models.Order;
   }
 
-  //  ADD BOOK
   async addBook(req, res) {
     try {
       const bookData = {
         ...req.body,
         librarianEmail: req.user.email,
-        status: "unpublished", 
+        status:req.body.status || "unpublished",
         createdAt: new Date(),
       };
 
       const result = await this.Book.create(bookData);
       res.status(201).send(result);
-
     } catch (error) {
       console.log("Add Book Error:", error);
       res.status(500).send({ message: error.message });
     }
   }
 
-  //  ALL PUBLISHED BOOKS 
   async getAllBooks(req, res) {
     try {
+      const { search, sort } = req.query;
+
+      let query = { status: "published" };
+
+      if (search) {
+        query.title = { $regex: search, $options: "i" };
+      }
+
+      let sortOptions = { createdAt: -1 };
+
+      if (sort === "asc") {
+        sortOptions = { price: 1 };
+      } else if (sort === "desc") {
+        sortOptions = { price: -1 };
+      }
+
       const books = await this.Book.collection
-        .find({ status: "published" })
-        .sort({ createdAt: -1 })
+        .find(query)
+        .sort(sortOptions)
         .toArray();
 
       res.send(books);
-
     } catch (error) {
       console.log("Get Books Error:", error);
       res.status(500).send({ message: "Failed to fetch books" });
     }
   }
 
-  
   async getLatestBooks(req, res) {
     try {
       const books = await this.Book.collection
@@ -51,16 +62,14 @@ class BookController {
         .toArray();
 
       res.send(books);
-
     } catch (error) {
       console.log("Latest Books Error:", error);
       res.status(500).send({
-        message: "Failed to fetch latest books"
+        message: "Failed to fetch latest books",
       });
     }
   }
 
-  // SINGLE BOOK
   async getBookById(req, res) {
     try {
       const book = await this.Book.collection.findOne({
@@ -72,14 +81,12 @@ class BookController {
       }
 
       res.send(book);
-
     } catch (error) {
       console.log("Get Book Error:", error);
       res.status(500).send({ message: "Failed to fetch book" });
     }
   }
 
-  // LIBRARIAN MY BOOKS 
   async getMyBooks(req, res) {
     try {
       const email = req.user.email;
@@ -90,14 +97,12 @@ class BookController {
         .toArray();
 
       res.send(books);
-
     } catch (error) {
       console.log("My Books Error:", error);
       res.status(500).send({ message: "Failed to fetch books" });
     }
   }
 
-  // ================= UPDATE BOOK =================
   async updateBook(req, res) {
     try {
       const { id } = req.params;
@@ -110,27 +115,23 @@ class BookController {
 
       if (result.modifiedCount === 0) {
         return res.status(404).send({
-          message: "Book not found or unauthorized"
+          message: "Book not found or unauthorized",
         });
       }
 
       res.send({ message: "Book updated successfully" });
-
     } catch (error) {
       console.log("Update Book Error:", error);
       res.status(500).send({ message: "Update failed" });
     }
   }
 
-  // ================= ADMIN DELETE =================
   async deleteBookAdmin(req, res) {
     try {
       const { id } = req.params;
 
-      
       await this.Order.collection.deleteMany({ bookId: id });
 
-      // Delete book
       const result = await this.Book.collection.deleteOne({
         _id: new ObjectId(id),
       });
@@ -140,16 +141,14 @@ class BookController {
       }
 
       res.send({
-        message: "Book and related orders deleted successfully"
+        message: "Book and related orders deleted successfully",
       });
-
     } catch (error) {
       console.log("Delete Book Error:", error);
       res.status(500).send({ message: "Delete failed" });
     }
   }
 
-  // ADMIN STATUS UPDATE 
   async updateBookStatusAdmin(req, res) {
     try {
       const { id } = req.params;
@@ -157,7 +156,7 @@ class BookController {
 
       if (!["published", "unpublished"].includes(status)) {
         return res.status(400).send({
-          message: "Invalid status"
+          message: "Invalid status",
         });
       }
 
@@ -171,14 +170,12 @@ class BookController {
       }
 
       res.send({ message: "Book status updated successfully" });
-
     } catch (error) {
       console.log("Update Status Error:", error);
       res.status(500).send({ message: "Update failed" });
     }
   }
 
-  // ================= ADMIN GET ALL =================
   async getAllBooksAdmin(req, res) {
     try {
       const books = await this.Book.collection
@@ -187,7 +184,6 @@ class BookController {
         .toArray();
 
       res.send(books);
-
     } catch (error) {
       console.log("Admin Get Books Error:", error);
       res.status(500).send({ message: "Failed to fetch books" });

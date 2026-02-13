@@ -15,6 +15,8 @@ async function connectDatabase() {
       books: db.collection("books"),
       librarianRequests: db.collection("librarianRequests"),
       orders: db.collection("orders"),
+      wishlist: db.collection("wishlist"),   
+      reviews: db.collection("reviews"),     
     },
   };
 }

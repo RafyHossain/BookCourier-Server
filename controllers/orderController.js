@@ -6,59 +6,69 @@ class OrderController {
     this.Book = models.Book;
   }
 
-  // ================= CREATE ORDER =================
-  async createOrder(req, res) {
-    try {
-      const { bookId, phone, address, name } = req.body;
-      const userEmail = req.user.email;
+async createOrder(req, res) {
+  try {
+    const { bookId, phone, address, name } = req.body;
+    const userEmail = req.user.email;
 
-      const book = await this.Book.collection.findOne({
-        _id: new ObjectId(bookId),
-      });
+    const book = await this.Book.collection.findOne({
+      _id: new ObjectId(bookId),
+    });
 
-      if (!book) {
-        return res.status(404).send({ message: "Book not found" });
-      }
-
-      const existingOrder = await this.Order.collection.findOne({
-        bookId,
-        userEmail,
-        status: { $ne: "cancelled" }
-      });
-
-      if (existingOrder) {
-        return res.status(400).send({
-          message: "You already ordered this book",
-        });
-      }
-
-      const orderData = {
-        bookId,
-        bookTitle: book.title,
-        price: book.price,
-        userEmail,
-        name,
-        phone,
-        address,
-        bookOwner: book.librarianEmail, 
-      };
-
-      const result = await this.Order.create(orderData);
-
-      res.status(201).send(result);
-
-    } catch (error) {
-      res.status(500).send({ message: "Order failed" });
+    if (!book) {
+      return res.status(404).send({ message: "Book not found" });
     }
-  }
 
-  // ================= USER ORDERS =================
+    const existingOrder = await this.Order.collection.findOne({
+      bookId: bookId,   // ✅ STRING
+      userEmail,
+      status: { $ne: "cancelled" }
+    });
+
+    if (existingOrder) {
+      return res.status(400).send({
+        message: "You already ordered this book",
+      });
+    }
+
+    const orderData = {
+      bookId: bookId,   // ✅ STORE AS STRING
+      bookTitle: book.title,
+      price: book.price,
+      userEmail,
+      name,
+      phone,
+      address,
+      bookOwner: book.librarianEmail,
+      createdAt: new Date(),
+      status: "pending",
+      paymentStatus: "unpaid"
+    };
+
+    const result = await this.Order.collection.insertOne(orderData);
+
+    res.status(201).send(result);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Order failed" });
+  }
+}
+
+
+
   async getMyOrders(req, res) {
     try {
       const userEmail = req.user.email;
-      const orders = await this.Order.findByUser(userEmail);
+      
+      const orders = await this.Order.collection
+        .find({ userEmail })
+        .sort({ createdAt: -1 })
+        .toArray();
+
       res.send(orders);
     } catch (error) {
+      console.log(error);
       res.status(500).send({ message: "Failed to fetch orders" });
     }
   }
@@ -66,9 +76,15 @@ class OrderController {
   async cancelOrder(req, res) {
     try {
       const { id } = req.params;
-      await this.Order.cancelOrder(id);
+      
+      await this.Order.collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "cancelled" } }
+      );
+      
       res.send({ message: "Order cancelled" });
     } catch (error) {
+      console.log(error);
       res.status(500).send({ message: "Cancel failed" });
     }
   }
@@ -81,7 +97,7 @@ class OrderController {
       const order = await this.Order.collection.findOne({
         _id: new ObjectId(id),
         userEmail,
-        paymentStatus: "unpaid"
+        paymentStatus: { $ne: "paid" }
       });
 
       if (!order) {
@@ -90,7 +106,10 @@ class OrderController {
 
       const paymentId = "PAY_" + Date.now();
 
-      await this.Order.markAsPaid(id, paymentId);
+      await this.Order.collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { paymentStatus: "paid", paymentId, status: "processing" } }
+      );
 
       res.send({
         message: "Payment successful",
@@ -98,29 +117,31 @@ class OrderController {
       });
 
     } catch (error) {
+      console.log(error);
       res.status(500).send({ message: "Payment failed" });
     }
   }
 
-  async checkUserOrder(req, res) {
-    try {
-      const { bookId } = req.params;
-      const userEmail = req.user.email;
+async checkUserOrder(req, res) {
+  try {
+    const { bookId } = req.params;
+    const userEmail = req.user.email;
 
-      const order = await this.Order.collection.findOne({
-        bookId,
-        userEmail,
-        status: { $ne: "cancelled" }
-      });
+    const order = await this.Order.collection.findOne({
+      bookId: bookId,   // ✅ STRING
+      userEmail,
+      status: { $ne: "cancelled" }
+    });
 
-      res.send(order ? true : false);
+    res.send({ ordered: !!order });
 
-    } catch (error) {
-      res.status(500).send({ message: "Failed to check order" });
-    }
+  } catch (error) {
+    res.status(500).send({ message: "Failed to check order" });
   }
+}
 
-  // ================= LIBRARIAN ORDERS =================
+
+
   async getLibrarianOrders(req, res) {
     try {
       const email = req.user.email;
@@ -133,6 +154,7 @@ class OrderController {
       res.send(orders);
 
     } catch (error) {
+      console.log(error);
       res.status(500).send({ message: "Failed to fetch librarian orders" });
     }
   }
@@ -150,6 +172,7 @@ class OrderController {
       res.send({ message: "Order status updated" });
 
     } catch (error) {
+      console.log(error);
       res.status(500).send({ message: "Status update failed" });
     }
   }
@@ -177,6 +200,7 @@ class OrderController {
       res.send({ message: "Order deleted successfully" });
 
     } catch (error) {
+      console.log(error);
       res.status(500).send({
         message: "Delete failed"
       });

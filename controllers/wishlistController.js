@@ -1,6 +1,9 @@
+const { ObjectId } = require("mongodb");
+
 class WishlistController {
   constructor(models) {
     this.Wishlist = models.Wishlist;
+    this.Book = models.Book;
   }
 
   async addToWishlist(req, res) {
@@ -8,40 +11,73 @@ class WishlistController {
       const { bookId } = req.body;
       const userEmail = req.user.email;
 
-      const exists = await this.Wishlist.exists(bookId, userEmail);
-
-      if (exists) {
-        return res.status(400).send({ message: "Already added" });
+      if (!bookId) {
+        return res.status(400).send({ message: "BookId required" });
       }
 
-      const result = await this.Wishlist.add({
+      const existing = await this.Wishlist.collection.findOne({
         bookId,
-        userEmail,
+        userEmail
       });
 
-      res.status(201).send(result);
+      if (existing) {
+        return res.status(400).send({
+          message: "Already in wishlist"
+        });
+      }
+
+      await this.Wishlist.collection.insertOne({
+        bookId,
+        userEmail,
+        createdAt: new Date()
+      });
+
+      res.send({ message: "Added to wishlist" });
 
     } catch (error) {
-      res.status(500).send({ message: "Failed" });
+      console.log("Wishlist Error:", error);
+      res.status(500).send({ message: "Wishlist failed" });
     }
   }
 
   async getMyWishlist(req, res) {
     try {
-      const email = req.user.email;
-      const data = await this.Wishlist.findByUser(email);
-      res.send(data);
-    } catch {
-      res.status(500).send({ message: "Failed" });
+      const userEmail = req.user.email;
+
+      const wishlist = await this.Wishlist.collection
+        .find({ userEmail })
+        .toArray();
+
+      const books = await Promise.all(
+        wishlist.map(item =>
+          this.Book.collection.findOne({
+            _id: new ObjectId(item.bookId)
+          })
+        )
+      );
+
+      res.send(books.filter(Boolean));
+
+    } catch (error) {
+      console.log(error);
+      res.status(500).send({ message: "Fetch failed" });
     }
   }
 
   async removeFromWishlist(req, res) {
     try {
-      await this.Wishlist.remove(req.params.id);
+      const { id } = req.params;
+      const userEmail = req.user.email;
+
+      await this.Wishlist.collection.deleteOne({
+        bookId: id,
+        userEmail
+      });
+
       res.send({ message: "Removed" });
-    } catch {
-      res.status(500).send({ message: "Failed" });
+
+    } catch (error) {
+      res.status(500).send({ message: "Remove failed" });
     }
   }
 }
