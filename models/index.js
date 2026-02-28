@@ -14,6 +14,7 @@ function initializeModels(collections) {
     Order: new OrderModel(collections.orders),
     Wishlist: new WishlistModel(collections.wishlist),
     Review: new ReviewModel(collections.reviews),
+    Contact: { collection: collections.contacts },
 
 
     

@@ -25,28 +25,51 @@ class BookController {
 
   async getAllBooks(req, res) {
     try {
-      const { search, sort } = req.query;
+      // Added category, page and limit for pagination & filtering
+      const { search, sort, category, page = 1, limit = 8 } = req.query;
 
       let query = { status: "published" };
 
+      // Search by title
       if (search) {
         query.title = { $regex: search, $options: "i" };
       }
+      
+      // Filter by category
+      if (category && category !== "All") {
+        query.category = category;
+      }
 
+      // Sorting
       let sortOptions = { createdAt: -1 };
-
       if (sort === "asc") {
         sortOptions = { price: 1 };
       } else if (sort === "desc") {
         sortOptions = { price: -1 };
       }
 
+      // Pagination Logic
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Get total count for frontend pagination buttons
+      const totalBooks = await this.Book.collection.countDocuments(query);
+
       const books = await this.Book.collection
         .find(query)
         .sort(sortOptions)
+        .skip(skip)
+        .limit(limitNumber)
         .toArray();
 
-      res.send(books);
+      // Send books along with pagination info
+      res.send({
+        books,
+        totalBooks,
+        totalPages: Math.ceil(totalBooks / limitNumber),
+        currentPage: pageNumber
+      });
     } catch (error) {
       console.log("Get Books Error:", error);
       res.status(500).send({ message: "Failed to fetch books" });

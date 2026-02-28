@@ -11,7 +11,7 @@ const userRoutes = require("./routes/users");
 const orderRoutes = require("./routes/orders");
 const librarianRequestRoutes = require("./routes/librarianRequests");
 const wishlistRoutes = require("./routes/wishlist");
-const reviewRoutes = require("./routes/reviews"); // 🔥 Added Review Routes
+const reviewRoutes = require("./routes/reviews"); 
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -20,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("📚 BookCourier server running");
+  res.send(" BookCourier server running");
 });
 
 async function startServer() {
@@ -40,7 +40,7 @@ async function startServer() {
   app.use("/orders", orderRoutes(models));
   app.use("/librarian-requests", librarianRequestRoutes(models));
   app.use("/wishlist", wishlistRoutes(models));
-  app.use("/reviews", reviewRoutes(models)); // 🔥 Enabled Review Routes
+  app.use("/reviews", reviewRoutes(models)); 
 
   app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
